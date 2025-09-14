@@ -10,7 +10,6 @@ depends="
   python3
   ffmpeg
   p7zip
-  unarchiver
 "
 
 makedepends="
