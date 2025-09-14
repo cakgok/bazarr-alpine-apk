@@ -10,66 +10,63 @@ depends="
   python3
   ffmpeg
   p7zip
-  unrar
+  unarchiver
 "
+
 makedepends="
-    build-base
-    python3-dev
-    py3-pip
-    py3-wheel
-    py3-setuptools
-    unzip
-    libxml2-dev
-    libxslt-dev
-    cargo
+  build-base
+  python3-dev
+  py3-pip
+  py3-wheel
+  py3-setuptools
+  unzip
+  cargo
+  lapack-dev
+  libxml2-dev
+  libxslt-dev
 "
 options="!check"
 
-# Upstream always ships a ready-to-run zip archive named bazarr.zip
-source="$pkgname-$pkgver.zip::https://github.com/morpheus65535/bazarr/releases/download/v$pkgver/bazarr.zip"
-builddir="$srcdir/$pkgname"
+# System account that will own /var/lib/bazarr
+pkgusers="bazarr"
+pkggroups="bazarr"
+
+# Scriptlets (NOT listed in source=)
+install="$pkgname.pre-install $pkgname.post-upgrade"
+
+
+# Upstream ships a ready-to-run zip archive named bazarr.zip
+source="
+  $pkgname-$pkgver.zip::https://github.com/morpheus65535/bazarr/releases/download/v$pkgver/bazarr.zip
+  bazarr.initd
+  bazarr.confd
+"
+builddir="$srcdir"
 
 build() {
-    cd "$srcdir"
-    python3 -m pip install \
-        --no-user \
-        --target=./libs \
-        -r requirements.txt
+  cd "$builddir"
+  python3 -m pip install \
+    --no-user \
+    --target=./libs \
+    -r requirements.txt
 }
 
 package() {
-    # Install the main application files
-    install -d "$pkgdir"/opt/bazarr
-    cp -r "$srcdir"/* "$pkgdir"/opt/bazarr/
+  install -d "$pkgdir"/opt/bazarr
+  cp -r "$builddir"/* "$pkgdir"/opt/bazarr/
 
-    # Clean up build-only files from the final package
-    rm -rf "$pkgdir"/opt/bazarr/libs # Remove the empty placeholder libs dir
-
-    # Install the vendored python libraries from the build stage
-    install -d "$pkgdir"/opt/bazarr/libs
-    cp -r "$builddir"/libs/* "$pkgdir"/opt/bazarr/libs/
-
-    # Create a wrapper script in /usr/bin for easy execution
-    install -d "$pkgdir"/usr/bin
-    cat > "$pkgdir"/usr/bin/bazarr <<-EOF
+  install -d "$pkgdir"/usr/bin
+  cat >"$pkgdir"/usr/bin/bazarr <<'EOF'
 #!/bin/sh
 export PYTHONPATH="/opt/bazarr/libs"
-
-# Run the main application from its location in /opt.
-# The --no-update flag prevents Bazarr from breaking the package manager's control.
-# "\$@" passes all command-line arguments to the script.
-exec python3 /opt/bazarr/bazarr.py --no-update "\$@"
+exec python3 /opt/bazarr/bazarr.py --no-update "$@"
 EOF
-    chmod +x "$pkgdir"/usr/bin/bazarr
+  chmod +x "$pkgdir"/usr/bin/bazarr
 
-    # Install OpenRC service files
-    install -d "$pkgdir"/etc/init.d
-    install -Dm755 "$startdir"/bazarr.initd "$pkgdir"/etc/init.d/bazarr
+  # OpenRC service
+  install -Dm755 "$srcdir"/bazarr.initd "$pkgdir"/etc/init.d/bazarr
+  install -Dm644 "$srcdir"/bazarr.confd "$pkgdir"/etc/conf.d/bazarr
 
-    install -d "$pkgdir"/etc/conf.d
-    install -Dm644 "$startdir"/bazarr.confd "$pkgdir"/etc/conf.d/bazarr
+  # Data directory
+  install -d -o bazarr -g bazarr -m 755 "$pkgdir"/var/lib/bazarr
 }
-
-sha512sums="
-e238f4d9b626d03425ed321ec9484b9015c7e1488c03cce8c23fc66504a52a32c2567954e7d0bbd603a1158a27c081e77372d627ec1e9780fa356caad742b781  bazarr.zip
-"
