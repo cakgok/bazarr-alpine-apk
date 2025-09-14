@@ -58,7 +58,7 @@ jobs:
   
   build-apk:
     needs: [detect-updates, update-apkbuild]
-    if: needs.detect-updates.outputs.has_updates == 'true'
+    if: needs.detect-updates.outputs.has_updates == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     

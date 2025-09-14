@@ -7,6 +7,7 @@ export UNRAR_CMD="${BAZARR_CMD_UNRAR:-}"
 command="/usr/bin/bazarr"
 command_args="-c ${BAZARR_DATADIR}"
 command_user="${BAZARR_USER}:${BAZARR_GROUP}"
+command_background="yes"
 pidfile="/run/${RC_SVCNAME}.pid"
 
 depend() {
