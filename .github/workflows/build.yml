@@ -10,7 +10,7 @@ concurrency:
 
 env:
   APP: bazarr
-
+  UPSTREAM: morpheus65535/bazarr
 jobs:
   detect-updates:
     runs-on: ubuntu-latest
