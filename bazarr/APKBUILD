@@ -70,3 +70,7 @@ EOF
   # Data directory
   install -d -o bazarr -g bazarr -m 755 "$pkgdir"/var/lib/bazarr
 }
+
+sha512sums="
+524a8818e7da415bc5bd0e73955e8638750ad2c760c73473d9e7423fe3c0d84a078dddc0f57c1f48a884a83ff9e1dce7a1e6b76cc21a31e03caa669f2f6e986b  bazarr-1.5.2.zip
+"
