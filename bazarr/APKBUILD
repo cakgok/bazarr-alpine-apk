@@ -60,6 +60,13 @@ exec python3 /usr/lib/bazarr/bazarr.py --no-update "$@"
 EOF
   chmod +x "$pkgdir"/usr/bin/bazarr
 
+  cat >"$pkgdir"/usr/bin/unrar <<'EOF'
+#!/bin/sh
+# lightweight shim so software expecting "unrar" works with p7zip
+exec /usr/bin/7z x -y "$@"
+EOF
+   chmod +x "$pkgdir"/usr/bin/unrar
+
   install -Dm755 "$srcdir"/bazarr.initd "$pkgdir"/etc/init.d/bazarr
   install -Dm644 "$srcdir"/bazarr.confd "$pkgdir"/etc/conf.d/bazarr
 
