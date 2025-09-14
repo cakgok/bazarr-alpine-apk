@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_NAME="$1"
-NEW_VERSION="$2"
+VERSION="$2"
 
 if [[ -z "$VERSION" ]]; then
   echo "Error: A version number must be provided as the first argument."
