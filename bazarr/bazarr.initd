@@ -2,6 +2,7 @@
 
 name="Bazarr"
 description="Subtitle manager for Sonarr and Radarr"
+export UNRAR_CMD="${BAZARR_CMD_UNRAR:-}"
 
 command="/usr/bin/bazarr"
 command_args="-c ${BAZARR_DATADIR}"

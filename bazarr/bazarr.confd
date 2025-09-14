@@ -4,3 +4,5 @@ BAZARR_GROUP="bazarr"
 
 # data directory (for config, db, logs)
 BAZARR_DATADIR="/var/lib/bazarr"
+
+BAZARR_CMD_UNRAR="/usr/bin/7z x -y -o"
