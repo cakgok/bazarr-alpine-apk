@@ -29,10 +29,8 @@ options="!check"
 # System account that will own /var/lib/bazarr
 pkgusers="bazarr"
 pkggroups="bazarr"
-
-# Scriptlets (NOT listed in source=)
 install="$pkgname.pre-install $pkgname.post-upgrade"
-
+subpackages="$pkgname-openrc"
 
 # Upstream ships a ready-to-run zip archive named bazarr.zip
 source="
@@ -51,18 +49,17 @@ build() {
 }
 
 package() {
-  install -d "$pkgdir"/opt/bazarr
-  cp -r "$builddir"/* "$pkgdir"/opt/bazarr/
+  install -d "$pkgdir"/usr/lib/$pkgname
+  cp -r "$builddir"/* "$pkgdir"/usr/lib/$pkgname/
 
   install -d "$pkgdir"/usr/bin
   cat >"$pkgdir"/usr/bin/bazarr <<'EOF'
 #!/bin/sh
-export PYTHONPATH="/opt/bazarr/libs"
-exec python3 /opt/bazarr/bazarr.py --no-update "$@"
+export PYTHONPATH="/usr/lib/bazarr/libs"
+exec python3 /usr/lib/bazarr/bazarr.py --no-update "$@"
 EOF
   chmod +x "$pkgdir"/usr/bin/bazarr
 
-  # OpenRC service
   install -Dm755 "$srcdir"/bazarr.initd "$pkgdir"/etc/init.d/bazarr
   install -Dm644 "$srcdir"/bazarr.confd "$pkgdir"/etc/conf.d/bazarr
 
