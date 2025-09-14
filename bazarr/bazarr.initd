@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+
+name="Bazarr"
+description="Subtitle manager for Sonarr and Radarr"
+
+command="/usr/bin/bazarr"
+command_args="-c ${BAZARR_DATADIR}"
+command_user="${BAZARR_USER}:${BAZARR_GROUP}"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    checkpath -d -o "${BAZARR_USER}:${BAZARR_GROUP}" -m 755 "$(dirname ${pidfile})"
+    checkpath -d -o "${BAZARR_USER}:${BAZARR_GROUP}" -m 755 "${BAZARR_DATADIR}"
+}

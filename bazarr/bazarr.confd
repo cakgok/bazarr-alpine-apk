@@ -1,0 +1,6 @@
+# user and group to run bazarr as
+BAZARR_USER="bazarr"
+BAZARR_GROUP="bazarr"
+
+# data directory (for config, db, logs)
+BAZARR_DATADIR="/var/lib/bazarr"

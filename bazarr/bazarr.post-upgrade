@@ -1,0 +1,3 @@
+#!/bin/sh
+chown -R bazarr:bazarr /var/lib/bazarr
+exit 0

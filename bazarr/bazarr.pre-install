@@ -1,0 +1,8 @@
+#!/bin/sh
+if ! getent group bazarr >/dev/null; then
+    addgroup -S bazarr
+fi
+if ! getent passwd bazarr >/dev/null; then
+    adduser -S -G bazarr -h /var/lib/bazarr -s /sbin/nologin bazarr
+fi
+exit 0
