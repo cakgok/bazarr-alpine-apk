@@ -54,7 +54,7 @@ jobs:
       run: bash ./scripts/update-apkbuild.sh "${{env.APP}}" "${{ needs.detect-updates.outputs.new_version }}"
 
     - name: Commit & tag
-      run: bash ./scripts/git-commit.sh "${{env.APP}}" "${{ needs.detect-updates.outputs.new_version }}"
+      run: bash ./scripts/commit-and-tag.sh "${{env.APP}}" "${{ needs.detect-updates.outputs.new_version }}"
   
   build-apk:
     needs: [detect-updates, update-apkbuild]
