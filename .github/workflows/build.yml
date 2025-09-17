@@ -171,6 +171,12 @@ jobs:
         name: ${{ env.APP }}-x86_64-apk
         path: repo/main/x86_64
 
+    - name: Write public key into repo
+      env:
+        PUBKEY: ${{ secrets.PACKAGER_PUBKEY }}
+        KEY_NAME: ${{ secrets.KEY_NAME }}
+      run: echo "$PUBKEY" > repo/${KEY_NAME}.pub
+
     - name: Add public key to repository
       env:
         KEY_NAME: ${{ secrets.KEY_NAME }}
