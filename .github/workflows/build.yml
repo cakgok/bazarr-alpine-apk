@@ -177,22 +177,22 @@ jobs:
         PRIVATE_KEY: ${{ secrets.PACKAGER_PRIVKEY }}
       run: |
         mkdir -p ~/.abuild
-        echo "$PRIVATE_KEY" > ~/.abuild/$KEY_NAME
-        chmod 600 ~/.abuild/$KEY_NAME
-        openssl rsa -in ~/.abuild/$KEY_NAME -pubout -out repo/${KEY_NAME}.pub
+        echo "$PRIVATE_KEY" > ~/.abuild/${KEY_NAME}.rsa
+        chmod 600 ~/.abuild/${KEY_NAME}.rsa
+        openssl rsa -in ~/.abuild/${KEY_NAME}.rsa -pubout -out repo/${KEY_NAME}.rsa.pub
 
     - name: Trust signing key for apk index
       env:
         KEY_NAME: ${{ secrets.KEY_NAME }}
       run: |
         mkdir -p /etc/apk/keys
-        cp repo/${KEY_NAME}.pub /etc/apk/keys/
+        cp repo/${{ secrets.KEY_NAME }}.rsa.pub /etc/apk/keys/
 
     - name: Generate and sign APKINDEX
       working-directory: repo/main/x86_64
       run: |
         apk index -o APKINDEX.tar.gz *.apk
-        abuild-sign -k ~/.abuild/$KEY_NAME APKINDEX.tar.gz
+        abuild-sign -k ~/.abuild/${{ secrets.KEY_NAME }}.rsa APKINDEX.tar.gz
 
     - name: Remove .git directory
       run: rm -rf repo/.git
