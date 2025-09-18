@@ -34,14 +34,14 @@ docker run --rm \
       cd /work
 
       mkdir -p ~/.abuild
-      printf \"%s\n\" \"\${PRIVATE_KEY}\" > ~/.abuild/\${KEY_NAME}.rsa
-      chmod 600 ~/.abuild/\${KEY_NAME}.rsa
+      printf \"%s\n\" \"\${PRIVATE_KEY}\" > ~/.abuild/\${KEY_NAME}
+      chmod 600 ~/.abuild/\${KEY_NAME}
       
-      openssl rsa -in ~/.abuild/\${KEY_NAME}.rsa -pubout -out ~/.abuild/\${KEY_NAME}.rsa.pub
-      chmod 644 ~/.abuild/\${KEY_NAME}.rsa.pub
+      openssl rsa -in ~/.abuild/\${KEY_NAME} -pubout -out ~/.abuild/\${KEY_NAME}.pub
+      chmod 644 ~/.abuild/\${KEY_NAME}.pub
       
-      sudo cp ~/.abuild/\${KEY_NAME}.rsa.pub /etc/apk/keys/
-      echo \"PACKAGER_PRIVKEY=\$HOME/.abuild/\${KEY_NAME}.rsa\" >> ~/.abuild/abuild.conf
+      sudo cp ~/.abuild/\${KEY_NAME}.pub /etc/apk/keys/
+      echo \"PACKAGER_PRIVKEY=\$HOME/.abuild/\${KEY_NAME}\" >> ~/.abuild/abuild.conf
 
       export CARCH=\${TARGET_ARCH}
 
