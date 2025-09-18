@@ -11,7 +11,11 @@ export UNRAR_CMD="$BAZARR_CMD_UNRAR"
 command="/usr/bin/bazarr"
 command_args="-c ${BAZARR_DATADIR}"
 command_user="${BAZARR_USER}:${BAZARR_GROUP}"
-command_background="yes"
+supervisor="supervise-daemon"
+
+respawn_delay=5         # wait 5 s before a restart
+respawn_max=10          # max 10 restarts in a row
+
 pidfile="/run/${RC_SVCNAME}.pid"
 
 depend() {
