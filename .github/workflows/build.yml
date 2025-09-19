@@ -1,19 +1,27 @@
-name: Auto-build APK
+name: Build-and-release          
 on:
-  schedule:
-    - cron: '0 5 * * *'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      APP:
+        required: true
+        type: string
+      UPSTREAM:
+        required: true
+        type: string
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+concurrency:                              
+  group: apk-${{ inputs.APP }}
+  cancel-in-progress: false
 
 env:
-  APP: bazarr
-  UPSTREAM: morpheus65535/bazarr
+  TARGET_ARCH: x86_64
+  APP:      ${{ inputs.APP }}
+  UPSTREAM: ${{ inputs.UPSTREAM }}
+
 jobs:
   detect-updates:
     runs-on: ubuntu-latest
+
     outputs:
       has_updates: ${{ steps.check-updates.outputs.has_updates }}
       new_version: ${{ steps.check-updates.outputs.new_version }}
@@ -32,10 +40,8 @@ jobs:
       id: check-updates
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        APP: ${{ env.APP }}
-        UPSTREAM: ${{ env.UPSTREAM }}
-      run: bash ./scripts/check-updates.sh
-
+      run:  bash ./scripts/check-updates.sh
+  
   update-apkbuild:
     needs: detect-updates
     if: needs.detect-updates.outputs.has_updates == 'true'
@@ -52,7 +58,6 @@ jobs:
 
     - name: Update APKBUILD
       run: bash ./scripts/update-apkbuild.sh "${{env.APP}}" "${{ needs.detect-updates.outputs.new_version }}"
-
     - name: Commit & tag
       run: bash ./scripts/commit-and-tag.sh "${{env.APP}}" "${{ needs.detect-updates.outputs.new_version }}"
   
@@ -75,12 +80,6 @@ jobs:
         TARGET_ARCH: x86_64
         APP_NAME: ${{env.APP}}
       run: bash ./scripts/build.sh
-
-    - name: Debug - List APK files
-      run: |
-        echo "Contents of ${{env.APP}}/out:"
-        find ${{env.APP}}/out -type f -name "*.apk" || echo "No APK files found"
-        ls -la ${{env.APP}}/out/ || echo "Directory doesn't exist"
     
     - name: Upload ${{env.APP}} artifact
       uses: actions/upload-artifact@v4
@@ -104,104 +103,16 @@ jobs:
         name: ${{env.APP}}-x86_64-apk
         path: artifacts
 
-    - name: Debug - List downloaded APK files
-      run: |
-        echo "::group::Artifacts for ${{env.APP}}"
-        find artifacts -name '*.apk' -printf '%P\n'
-        echo "::endgroup::"
-
     - name: Create GitHub release
       uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
       with:
         tag_name:  ${{env.APP}}-v${{ needs.detect-updates.outputs.new_version }}
-        name:     ${{env.APP}}-v${{ needs.detect-updates.outputs.new_version }} (Alpine x86_64)"
+        name:      ${{env.APP}}-v${{ needs.detect-updates.outputs.new_version }} (Alpine x86_64)
         draft:     false
         prerelease: false
         files:     artifacts/*.apk
         body: |
-
-          ## Bazarr v${{ needs.detect-updates.outputs.new_version }}
-
-          **Subtitle management**
-
-          Alpine Linux APK package (*x86_64*).
-
-          ### Quick install
-          ```bash
-          apk add --allow-untrusted bazarr-${{ needs.detect-updates.outputs.new_version }}-r0.apk
-          ```
-
           Built automatically from upstream release:  
-          https://github.com/morpheus65535/bazarr/releases/tag/v${{ needs.detect-updates.outputs.new_version }}
-  
-  publish-repo:
-    needs: build-apk
-    runs-on: ubuntu-latest
-    container: alpine:latest
-
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}    
-    
-    steps:
-    - name: Install abuild + apk-tools
-      run: apk add --no-cache alpine-sdk apk-tools openssl tar gzip
-
-    - name: Checkout gh-pages branch
-      if: ${{ always() }}
-      uses: actions/checkout@v4
-      with:
-        ref: gh-pages
-        path: repo
-        fetch-depth: 1
-
-    - name: Create repository directory structure
-      run: mkdir -p repo/main/x86_64
-
-    - name: Download new APK artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ env.APP }}-x86_64-apk
-        path: repo/main/x86_64
-
-    - name: Install signing key and derive .pub
-      env:
-        KEY_NAME: ${{ secrets.KEY_NAME }}
-        PRIVATE_KEY: ${{ secrets.PACKAGER_PRIVKEY }}
-      run: |
-        mkdir -p ~/.abuild
-        echo "$PRIVATE_KEY" > ~/.abuild/${KEY_NAME}
-        chmod 600 ~/.abuild/${KEY_NAME}
-        openssl rsa -in ~/.abuild/${KEY_NAME} -pubout -out repo/${KEY_NAME}.pub
-
-    - name: Trust signing key for apk index
-      env:
-        KEY_NAME: ${{ secrets.KEY_NAME }}
-      run: |
-        mkdir -p /etc/apk/keys
-        cp repo/${{ secrets.KEY_NAME }}.pub /etc/apk/keys/
-
-    - name: Generate and sign APKINDEX
-      working-directory: repo/main/x86_64
-      run: |
-        apk index -o APKINDEX.tar.gz *.apk
-        abuild-sign -k ~/.abuild/${{ secrets.KEY_NAME }} APKINDEX.tar.gz
-
-    - name: Remove .git directory
-      run: rm -rf repo/.git
-
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: repo/
-    
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+          https://github.com/${{ env.UPSTREAM }}/releases/tag/v${{ needs.detect-updates.outputs.new_version }}  
