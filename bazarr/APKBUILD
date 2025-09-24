@@ -7,69 +7,92 @@ arch="x86_64"
 license="GPL-3.0-or-later"
 
 depends="
-  python3
-  ffmpeg
-  p7zip
-"
+    7zip 
+    ffmpeg
+    mediainfo
+    python3
+    py3-wheel
+    py3-lxml
+    py3-numpy
+    py3-gevent
+    py3-cryptography
+    py3-setuptools
+    py3-psycopg2
+    py3-pillow
+    "
 
 makedepends="
-  build-base
-  python3-dev
-  py3-pip
-  py3-wheel
-  py3-setuptools
-  unzip
-  cargo
-  lapack-dev
-  libxml2-dev
-  libxslt-dev
-"
+    py3-pip
+    gcc
+    python3-dev
+    musl-dev
+    unzip
+    "
+
 options="!check"
 
 pkgusers="bazarr"
 pkggroups="bazarr"
-install="$pkgname.pre-install $pkgname.post-upgrade"
+install="$pkgname.pre-install"
 subpackages="$pkgname-openrc::x86_64"
 
-source="
-  $pkgname-$pkgver.zip::https://github.com/morpheus65535/bazarr/releases/download/v$pkgver/bazarr.zip
+source="$pkgname-$pkgver.zip::https://github.com/morpheus65535/bazarr/releases/download/v$pkgver/bazarr.zip
   bazarr.initd
   bazarr.confd
 "
-builddir="$srcdir"
 
+prepare() {
+    # Isolate the unpacked contents
+    mkdir -p "$srcdir/unpacked"
+    unzip -q "$srcdir/$pkgname-$pkgver.zip" -d "$srcdir/unpacked"
+    # Find the actual root of the source code
+    local _app_root="$srcdir/unpacked"
+    cd "$_app_root"
+    # Check if there's a nested zip
+    set -- *
+    if [ $# -eq 1 ] && [ -d "$1" ]; then
+        _app_root="$_app_root/$1"
+    fi
+    # Create clean folder for the app src
+    mkdir -p "$srcdir/app-source"
+    # Copy only the app files into the dir
+    cp -a "$_app_root/." "$srcdir/app-source/"
+    # Clean up
+    rm -rf "$srcdir/unpacked"
+}
 build() {
-  cd "$builddir"
-  python3 -m pip install \
-    --no-user \
-    --target=./libs \
-    -r requirements.txt
+    python3 -m pip install \
+        --no-cache-dir --no-deps           \
+        --only-binary=:all:                \
+        --no-index                         \
+        --dest="$srcdir/wheelhouse"  \
+        "webrtcvad-wheels==2.0.10"
+        # webrtcvad actually in testing, consider moving it into depeneds
+        # and get rid of 2-step pip install
 }
 
 package() {
-  install -d "$pkgdir"/usr/lib/$pkgname
-  cp -r "$builddir"/* "$pkgdir"/usr/lib/$pkgname/
+    install -dm755 "$pkgdir/usr/lib/bazarr" 
+    install -dm755 "$pkgdir/usr/bin"
+    install -dm755 "$pkgdir/var/lib/bazarr"
 
-  install -d "$pkgdir"/usr/bin
-  cat >"$pkgdir"/usr/bin/bazarr <<'EOF'
-#!/bin/sh
-export PYTHONPATH="/usr/lib/bazarr/libs"
-exec python3 /usr/lib/bazarr/bazarr.py --no-update "$@"
-EOF
-  chmod +x "$pkgdir"/usr/bin/bazarr
+    cp -a "$srcdir/app-source"/. "$pkgdir/usr/lib/bazarr/"
+    pip install \
+        --break-system-packages \
+        --no-deps --no-cache-dir --no-index \
+        --find-links="$srcdir/wheelhouse" \
+        --root="$pkgdir" --prefix=/usr \
+        "webrtcvad-wheels>=2.0.10"
 
-  cat >"$pkgdir"/usr/bin/unrar <<'EOF'
-#!/bin/sh
-# lightweight shim so software expecting "unrar" works with p7zip
-exec /usr/bin/7z x -y "$@"
-EOF
-   chmod +x "$pkgdir"/usr/bin/unrar
+    cat > "$pkgdir/usr/bin/bazarr" <<-EOF
+		#!/bin/sh
+		# Wrapper script to launch bazarr from /usr/bin
+		cd /usr/lib/bazarr
+		exec /usr/bin/python3 bazarr.py "\$@"
+	EOF
 
-  install -Dm755 "$srcdir"/bazarr.initd "$pkgdir"/etc/init.d/bazarr
-  install -Dm644 "$srcdir"/bazarr.confd "$pkgdir"/etc/conf.d/bazarr
-
-  # Data directory
-  install -d -o bazarr -g bazarr -m 755 "$pkgdir"/var/lib/bazarr
+    install -Dm755 "$srcdir"/$pkgname.initd "$pkgdir"/etc/init.d/$pkgname
+	install -Dm644 "$srcdir"/$pkgname.confd "$pkgdir"/etc/conf.d/$pkgname
 }
 
 sha512sums="

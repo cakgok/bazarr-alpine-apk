@@ -9,9 +9,23 @@ jobs:
       APP: bazarr
       UPSTREAM: morpheus65535/bazarr
 
-  sonarr:
+  stash:
     needs: bazarr
     uses: ./.github/workflows/build.yml
     with:
       APP: stash
       UPSTREAM: stashapp/stash
+
+  jellyseerr:
+    needs: stash
+    uses: ./.github/workflows/build.yml
+    with:
+      APP: jellyseerr
+      UPSTREAM: fallenbagel/jellyseerr
+
+  tautulli:
+    needs: jellyseerr
+    uses: ./.github/workflows/build.yml
+    with:
+      APP: tautulli
+      UPSTREAM: tautulli/tautulli
